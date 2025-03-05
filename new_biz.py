@@ -173,13 +173,21 @@ if selected=="UPLOAD & EXTRACT":
         df=pd.DataFrame(table)
         st.write(df)
         if st.button("Upload to Datbase(SQL)"):
-        
-                insert_query='''insert into card_details1(CARDHOLDER_NAME,DESIGNATION,COMPANY_NAME,CONTACT,AREA,CITY,STATE,PINCODE,MAIL_ID,WEBSITE,IMAGE)
+            values=df.values.tolist() # converted dataframe to list of values
+            for row in values:
+                email=row[8]
+                check_query=("select 1 from card_details1 where MAIL_ID=%s")
+                cur.execute(check_query,(email,))
+                result=cur.fetchone()
+                if result:
+                    st.error("Data already saved")
+                else:
+                    insert_query='''insert ignore into card_details1(CARDHOLDER_NAME,DESIGNATION,COMPANY_NAME,CONTACT,AREA,CITY,STATE,PINCODE,MAIL_ID,WEBSITE,IMAGE)
                             values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
-                values=df.values.tolist()
-                cur.executemany(insert_query,values)
-                mydb.commit()
-                st.success("Inserted database successfully")
+                
+                    cur.executemany(insert_query,values)
+                    mydb.commit()
+                    st.success("New entry added successfully")
 CARDHOLDER_NAME = ""
 if selected=="MODIFY": 
     cur.execute("select CARDHOLDER_NAME from card_details1")
@@ -210,6 +218,7 @@ if selected=="MODIFY":
                             (CARDHOLDER_NAME, DESIGNATION, COMPANY_NAME, CONTACT, AREA, CITY, STATE, PINCODE, MAIL_ID, WEBSITE, selected_card))
                     mydb.commit()
                     st.success("Updated successfully")
+                    
                 except Exception as e:
                     st.error(f"An error occurred: {e}")
                 
@@ -218,6 +227,12 @@ if selected=="MODIFY":
             st.error("No details found for the selected card.")
     else:
         st.warning("Please select a card.")
+    if st.button("View the updated data"):
+                        new=cur.execute("select * from card_details1")
+                        fetch=cur.fetchall()
+                        updated_df=pd.DataFrame(fetch,columns=["CARDHOLDER_NAME","DESIGNATION","COMPANY_NAME","CONTACT","AREA","CITY","STATE","PINCODE","MAIL_ID","WEBSITE","IMAGE"])
+                        st.dataframe(updated_df)
+
 if selected=="DELETE":
     cur.execute("select CARDHOLDER_NAME from card_details1")
     res=cur.fetchall()
@@ -234,8 +249,9 @@ if selected=="DELETE":
                 st.success("DELETED SUCCESSFULLY")
             except Exception as e:
                     st.error(f"An error occurred: {e}")
-    if st.button("view"):
+    if st.button("View the deleted data"):
         new=cur.execute("select * from card_details1")
         fetch=cur.fetchall()
         updated_df=pd.DataFrame(fetch,columns=["CARDHOLDER_NAME","DESIGNATION","COMPANY_NAME","CONTACT","AREA","CITY","STATE","PINCODE","MAIL_ID","WEBSITE","IMAGE"])
         st.dataframe(updated_df)
+        
